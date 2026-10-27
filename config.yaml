@@ -1,0 +1,79 @@
+# Name That LLM — Gemma 3 270M + learnable probes, tiered LoRA, multi-layer head.
+
+model_id: google/gemma-3-270m
+hf_cache: ../hf_cache
+max_len: 512
+# 1-indexed blocks. Gemma 3 270M has 18; 6, 12, and 18 are the full-attention blocks.
+tap_layers: [2, 4, 6, 10, 12, 16, 18]
+
+probe:
+  num: 10  # learnable tokens appended after passage (fixed order)
+  probe_count: 10  # prompt_ids per batch; batch_size / probe_count models per prompt
+  freeze: false
+  lr: 5.0e-4
+
+head:
+  freeze: false
+  lr: 2.0e-4
+  dropout: 0.1
+
+contrast:
+  weight: 0.3  # 0 disables supervised contrastive on contrast head output
+  temperature: 0.7
+  hidden_dim: 24
+  out_dim: 32
+  freeze: false
+  lr: 1.0e-4
+
+lora:
+  lora_1:
+    enabled: false
+    layers: [1, 2, 3, 4, 5]
+    r: 2
+    alpha: 4
+    dropout: 0.05
+    lr: 1.0e-6
+  lora_2:
+    enabled: false
+    layers: [6, 7, 8, 9]
+    r: 2
+    alpha: 4
+    dropout: 0.05
+    lr: 1.0e-6
+  lora_3:
+    enabled: false
+    layers: [10, 11, 12, 13, 14]
+    r: 2
+    alpha: 4
+    dropout: 0.05
+    lr: 1.0e-6
+  lora_4:
+    enabled: false
+    layers: [15, 16, 17, 18]
+    r: 2
+    alpha: 4
+    dropout: 0.05
+    lr: 1.0e-6
+
+data:
+  root: data
+  train_csv: train.csv
+  test_fraction: 0.1  # 0 trains on every complete prompt
+  seed: 42
+  num_workers: 0
+
+train:
+  checkpoint:
+    init:
+    resume: true
+  session_dir: training_session
+  epochs: 100
+  batch_size: 180
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  max_steps: 0
+  save_steps: 50
+  optimizer:
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
